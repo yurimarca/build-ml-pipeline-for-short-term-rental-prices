@@ -1,170 +1,111 @@
-# Build an ML Pipeline for Short-Term Rental Prices in NYC
-You are working for a property management company renting rooms and properties for short periods of 
-time on various rental platforms. You need to estimate the typical price for a given property based 
-on the price of similar properties. Your company receives new data in bulk every week. The model needs 
-to be retrained with the same cadence, necessitating an end-to-end pipeline that can be reused.
+# Short-Term Rental Price Prediction Pipeline in NYC
 
-In this project you will build such a pipeline.
+## Project Overview
 
-## Table of contents
+This project builds an **end-to-end Machine Learning pipeline** to estimate rental prices for short-term stays in New York City. The pipeline focuses on data preparation, modeling, testing, and deployment to ensure it can be easily reused for weekly retraining.
 
-- [Introduction](#build-an-ML-Pipeline-for-Short-Term-Rental-Prices-in-NYC)
-- [Preliminary steps](#preliminary-steps)
-  * [Fork the Starter Kit](#fork-the-starter-kit)
-  * [Create environment](#create-environment)
-  * [Get API key for Weights and Biases](#get-api-key-for-weights-and-biases)
-  * [Cookie cutter](#cookie-cutter)
-  * [The configuration](#the-configuration)
-  * [Running the entire pipeline or just a selection of steps](#Running-the-entire-pipeline-or-just-a-selection-of-steps)
-  * [Pre-existing components](#pre-existing-components)
-- [Instructions](#instructions)
-  * [Exploratory Data Analysis (EDA)](#exploratory-data-analysis-eda)
-  * [Data cleaning](#data-cleaning)
-  * [Data testing](#data-testing)
-  * [Data splitting](#data-splitting)
-  * [Train Random Forest](#train-random-forest)
-  * [Optimize hyperparameters](#optimize-hyperparameters)
-  * [Select the best model](#select-the-best-model)
-  * [Test](#test)
-  * [Visualize the pipeline](#visualize-the-pipeline)
-  * [Release the pipeline](#release-the-pipeline)
-  * [Train the model on a new data sample](#train-the-model-on-a-new-data-sample)
-- [Cleaning up](#cleaning-up)
+---
 
-## Preliminary steps
+## Table of Contents
 
-### Supported Operating Systems
+1. [Project Setup](#project-setup)
+2. [Pipeline Steps](#pipeline-steps)
+3. [Environment and Tools](#environment-and-tools)
+4. [Step-by-Step Implementation](#step-by-step-implementation)
+5. [Model Training and Optimization](#model-training-and-optimization)
+6. [Testing and Deployment](#testing-and-deployment)
+7. [Results](#results)
+8. [Releasing and Running the Pipeline](#releasing-and-running-the-pipeline)
+9. [Lessons Learned](#lessons-learned)
 
-This project is compatible with the following operating systems:
+---
 
-- **Ubuntu 22.04** (Jammy Jellyfish) - both Ubuntu installation and WSL (Windows Subsystem for Linux)
-- **Ubuntu 24.04** - both Ubuntu installation and WSL (Windows Subsystem for Linux)
-- **macOS** - compatible with recent macOS versions
+## Project Setup
 
-Please ensure you are using one of the supported OS versions to avoid compatibility issues.
+### 1. Operating Systems
 
-### Python Requirement
+This project was ran on Fedora Linux 38 (Sway), Kernel: 6.8.9-100.fc38.x86_64
 
-This project requires **Python 3.10**. Please ensure that you have Python 3.10 installed and set as the default version in your environment to avoid any runtime issues.
+### 2. Fork the Starter Kit
 
-### Fork the Starter kit
-Go to [https://github.com/udacity/build-ml-pipeline-for-short-term-rental-prices.git](https://github.com/udacity/build-ml-pipeline-for-short-term-rental-prices.git)
-and click on `Fork` in the upper right corner. This will create a fork in your Github account, i.e., a copy of the
-repository that is under your control. Now clone the repository locally so you can start working on it:
+This project has a starter kit that was forked from the official repository.
 
-```
-git clone https://github.com/[your github username]/build-ml-pipeline-for-short-term-rental-prices.git
-```
-
-and go into the repository:
-
-```
+```bash
+git clone https://github.com/yurimarca/build-ml-pipeline-for-short-term-rental-prices.git
 cd build-ml-pipeline-for-short-term-rental-prices
 ```
-Commit and push to the repository often while you make progress towards the solution. Remember 
-to add meaningful commit messages.
 
-### Create environment
-Make sure to have conda installed and ready, then create a new environment using the ``environment.yml``
-file provided in the root of the repository and activate it:
+### 2. Create the Environment
+
+The provided `environment.yml` was used to set up the Conda environment:
 
 ```bash
-> conda env create -f environment.yml
-> conda activate nyc_airbnb_dev
+conda env create -f environment.yml
+conda activate nyc_airbnb_dev
 ```
 
-### Get API key for Weights and Biases
-Let's make sure we are logged in to Weights & Biases. Get your API key from W&B by going to 
-[https://wandb.ai/authorize](https://wandb.ai/authorize) and click on the + icon (copy to clipboard), 
-then paste your key into this command:
+### 3. Login to Weights & Biases (W&B)
+
+Log in to W&B to track experiments:
 
 ```bash
-> wandb login [your API key]
+wandb login [your_API_key]
 ```
 
-You should see a message similar to:
-```
-wandb: Appending key for api.wandb.ai to your netrc file: /home/[your username]/.netrc
-```
+---
 
-### Cookie cutter
-In order to make your job a little easier, you are provided a cookie cutter template that you can use to create 
-stubs for new pipeline components. It is not required that you use this, but it might save you from a bit of 
-boilerplate code. Just run the cookiecutter and enter the required information, and a new component 
-will be created including the `conda.yml` file, the `MLproject` file as well as the script. You can then modify these
-as needed, instead of starting from scratch.
-For example:
+## Pipeline Steps
 
-```bash
-> cookiecutter cookie-mlflow-step -o src
+The pipeline includes the following steps:
 
-step_name [step_name]: basic_cleaning
-script_name [run.py]: run.py
-job_type [my_step]: basic_cleaning
-short_description [My step]: This steps cleans the data
-long_description [An example of a step using MLflow and Weights & Biases]: Performs basic cleaning on the data and save the results in Weights & Biases
-parameters [parameter1,parameter2]: parameter1,parameter2,parameter3
-```
+1. **Exploratory Data Analysis (EDA)**
+2. **Basic Data Cleaning**
+3. **Data Testing**
+4. **Train-Validation-Test Split**
+5. **Model Training (Random Forest)**
+6. **Hyperparameter Optimization**
+7. **Model Selection and Testing**
+8. **Pipeline Visualization**
+9. **Pipeline Release**
 
-This will create a step called ``basic_cleaning`` under the directory ``src`` with the following structure:
+---
 
-```bash
-> ls src/basic_cleaning/
-conda.yml  MLproject  run.py
-```
+## Environment and Tools
 
-You can now modify the script (``run.py``), the conda environment (``conda.yml``) and the project definition 
-(``MLproject``) as you please.
+- **Python 3.10**: Required version.
+- **MLflow**: Manages experiments and pipeline runs.
+- **Hydra**: Handles configuration.
+- **Weights & Biases (W&B)**: Tracks artifacts and experiments.
+- **pandas-profiling**: Automates EDA.
+- **Scikit-learn**: For Random Forest model training.
 
-The script ``run.py`` will receive the input parameters ``parameter1``, ``parameter2``,
-``parameter3`` and it will be called like:
+---
 
-```bash
-> mlflow run src/step_name -P parameter1=1 -P parameter2=2 -P parameter3="test"
-```
+## Step-by-Step Implementation
 
-### The configuration
-As usual, the parameters controlling the pipeline are defined in the ``config.yaml`` file defined in
-the root of the starter kit. We will use Hydra to manage this configuration file. 
-Open this file and get familiar with its content. Remember: this file is only read by the ``main.py`` script 
-(i.e., the pipeline) and its content is
-available with the ``go`` function in ``main.py`` as the ``config`` dictionary. For example,
-the name of the project is contained in the ``project_name`` key under the ``main`` section in
-the configuration file. It can be accessed from the ``go`` function as 
-``config["main"]["project_name"]``.
+### 1. Exploratory Data Analysis (EDA)
 
-NOTE: do NOT hardcode any parameter when writing the pipeline. All the parameters should be 
-accessed from the configuration file.
+- **Run the `download` step** to fetch raw data so we can it available for EDA. 
 
-### Running the entire pipeline or just a selection of steps
-In order to run the pipeline when you are developing, you need to be in the root of the starter kit, 
-then you can execute as usual:
+   ```bash
+   mlflow run . -P steps=download
+   ```
 
-```bash
->  mlflow run .
-```
-This will run the entire pipeline.
+This command highlights the benefit of having hydra configuration 
 
-When developing it is useful to be able to run one step at the time. Say you want to run only
-the ``download`` step. The `main.py` is written so that the steps are defined at the top of the file, in the 
-``_steps`` list, and can be selected by using the `steps` parameter on the command line:
+2. **Perform EDA** using a Jupyter Notebook:
 
-```bash
-> mlflow run . -P steps=download
-```
-If you want to run the ``download`` and the ``basic_cleaning`` steps, you can similarly do:
-```bash
-> mlflow run . -P steps=download,basic_cleaning
-```
-You can override any other parameter in the configuration file using the Hydra syntax, by
-providing it as a ``hydra_options`` parameter. For example, say that we want to set the parameter
-modeling -> random_forest -> n_estimators to 10 and etl->min_price to 50:
+   ```bash
+   mlflow run src/eda
+   ```
 
-```bash
-> mlflow run . \
-  -P steps=download,basic_cleaning \
-  -P hydra_options="modeling.random_forest.n_estimators=10 etl.min_price=50"
-```
+   In the notebook:
+   - Analyze data using `pandas-profiling`.
+   - Identify missing values, outliers, and data issues.
+   - Apply initial cleaning (e.g., remove outliers with `price` between $10 and $350).
+
+
+
 
 ### Pre-existing components
 In order to simulate a real-world situation, we are providing you with some pre-implemented
