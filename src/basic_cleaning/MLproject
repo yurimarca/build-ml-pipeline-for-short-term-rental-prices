@@ -5,18 +5,32 @@ entry_points:
   main:
     parameters:
 
-      param1:
-        description: ## ADD DESCRIPTION
+      input_artifact:
+        description: Input raw dataset
         type: string
 
-      param2:
-        description: ## ADD DESCRIPTION
+      output_artifact:
+        description: Output clean dataset
         type: string
 
-      param3:
-        description: ## ADD DESCRIPTION
+      output_type:
+        description: Output type
+        type: string
+
+      output_description:
+        description: Description of the output artifact
+        type: string
+
+      min_price:
+        description: Minimum priced allowed for the dataset
+        type: string
+
+      max_price:
+        description: Maximum priced allowed for the dataset
         type: string
 
 
     command: >-
-        python run.py  --param1 {param1}  --param2 {param2}  --param3 {param3} 
+        python run.py  --input_artifact {input_artifact}  --output_artifact {output_artifact}  \
+                       --output_type {output_type}  --output_description {output_description}  \
+                       --min_price {min_price}  --max_price {max_price} 
