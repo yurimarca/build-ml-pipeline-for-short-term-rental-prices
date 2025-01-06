@@ -35,7 +35,7 @@ git clone https://github.com/yurimarca/build-ml-pipeline-for-short-term-rental-p
 cd build-ml-pipeline-for-short-term-rental-prices
 ```
 
-### 2. Create the Environment
+### 3. Create the Environment
 
 The provided `environment.yml` was used to set up the Conda environment:
 
@@ -44,7 +44,7 @@ conda env create -f environment.yml
 conda activate nyc_airbnb_dev
 ```
 
-### 3. Login to Weights & Biases (W&B)
+### 4. Login to Weights & Biases (W&B)
 
 Log in to W&B to track experiments:
 
@@ -135,6 +135,22 @@ _ = mlflow.run(
 
 ![correlation](src/eda/nan.png)
 
+
+### 2. Basic Data Cleaning
+
+- **Generate the `basic_cleaning` step using cookiecutter** by leveraging the template `cookie-mlflow-step` to rapidly generate an empty step of the pipeline.
+
+```bash
+> cookiecutter cookie-mlflow-step -o src
+step_name [step_name]: basic_cleaning
+script_name [run.py]: run.py
+job_type [my_step]: basic_cleaning
+short_description [My step]: A very basic data cleaning
+long_description [An example of a step using MLflow and Weights & Biases]: Download from W&B the raw dataset and apply some basic data cleaning, exporting the result to a new artifact
+parameters [parameter1,parameter2]: input_artifact,output_artifact,output_type,output_description,min_price,max_price
+```
+
+- 
 
 ## License
 
