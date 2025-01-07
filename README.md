@@ -169,8 +169,8 @@ if "basic_cleaning" in active_steps:
 
 ```
 
-- In the `run.py` file, sample data is filtered according to the defined price range (hydra config) and valid NYC locations. Also, duplicated data is removed.
-- Results show there are many NaN cells still present in the dataset, as we noticed during EDA.
+- In the `run.py` file, sample data is filtered according to the defined price range (hydra config) and valid NYC locations. Also, duplicated rows are removed.
+- Results show there are many NaN cells still present in the dataset, as we noticed during EDA. This highlights the need to handle NaNs in the inference pipeline that should be used for training and inference.
 
 ```bash
 > mlflow run . -P steps=basic_cleaning
@@ -191,13 +191,141 @@ if "basic_cleaning" in active_steps:
 ### 4. Data Splitting
 
 - **Split the cleaned data into training, validation, and test sets** using the pre-existing component.
-- After running the step, we obtained two new artifacts in W&B.
+- After running the step, we obtained two new artifacts in W&B: `trainval_data.csv` and `test_data.csv`.
 
 ```bash
-mlflow run . -P steps=train_val_test_split
+> mlflow run . -P steps=data_split
 ```
 
 ![data_split_step.png](images/data_split_step.png)
+
+### 5. Train Random Forest
+
+- **Train a baseline Random Forest model**.
+
+```bash
+> mlflow run . -P steps=train_random_forest
+```
+
+- In this step, we build a **inference pipeline** using the scikit-learn `Pipeline`, which lets apply all preprocessing steps automatically before-training or predicting, including handling NaNs.
+
+```python
+def get_inference_pipeline(rf_config, max_tfidf_features):
+    # Example categories
+    ordinal_categorical = ["room_type"]
+    non_ordinal_categorical = ["neighbourhood_group"]
+    zero_imputed = [
+        "minimum_nights", "number_of_reviews", "reviews_per_month",
+        "calculated_host_listings_count", "availability_365", "longitude", "latitude"
+    ]
+
+    # 1) Ordinal categorical
+    ordinal_categorical_preproc = OrdinalEncoder()
+
+    # 2) Non-ordinal categorical: SimpleImputer + OneHotEncoder
+    non_ordinal_categorical_preproc = Pipeline([
+        ("impute", SimpleImputer(strategy="most_frequent")),
+        ("encode", OneHotEncoder())
+    ])
+
+    # 3) Numeric imputation with zeros
+    zero_imputer = SimpleImputer(strategy="constant", fill_value=0)
+
+    # 4) Date transformation: fill missing dates + compute day deltas
+    date_imputer = Pipeline([
+        ("fill_date", SimpleImputer(strategy='constant', fill_value='2010-01-01')),
+        ("date_delta", FunctionTransformer(delta_date_feature, check_inverse=False, validate=False))
+    ])
+
+    # 5) TF-IDF on the "name" column
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    reshape_to_1d = FunctionTransformer(np.reshape, kw_args={"newshape": -1})
+    name_tfidf = Pipeline([
+        ("fill_text", SimpleImputer(strategy="constant", fill_value="")),
+        ("reshape", reshape_to_1d),
+        ("tfidf", TfidfVectorizer(max_features=max_tfidf_features, stop_words='english')),
+    ])
+
+    # Assemble these into a ColumnTransformer
+    preprocessor = ColumnTransformer([
+        ("ordinal_cat", ordinal_categorical_preproc, ordinal_categorical),
+        ("non_ordinal_cat", non_ordinal_categorical_preproc, non_ordinal_categorical),
+        ("impute_zero", zero_imputer, zero_imputed),
+        ("transform_date", date_imputer, ["last_review"]),
+        ("transform_name", name_tfidf, ["name"])
+    ])
+
+    # Create the RandomForest
+    random_forest = RandomForestRegressor(**rf_config)
+
+    # Combine into a single pipeline
+    sk_pipe = Pipeline([
+        ("preprocessor", preprocessor),
+        ("random_forest", random_forest),
+    ])
+
+    processed_features = (
+        ordinal_categorical
+        + non_ordinal_categorical
+        + zero_imputed
+        + ["last_review", "name"]
+    )
+
+    return sk_pipe, processed_features
+
+```
+
+- In this way:
+	- **ColumnTransformer** applies different steps (imputers, encoders, TF-IDF) to different columns.
+	- **RandomForestRegressor** is configured with rf_config (e.g., number of estimators, random seed).
+	- **Pipeline** ensures that when you call `.fit(...)` or `.predict(...)`, all transformations (preprocessing + model inference) happen in sequence.
+
+- Also, training and scoring is conducted. By calling `sk_pipe.fit(...)` on the training split, all preprocessing is performed before training the Random Forest. Performance is measured on the validation set using R² `(.score(...))` and mean absolute error `(mean_absolute_error(y_val, y_pred))`.
+- The model is exported with mlflow which serializes the entire pipeline (transformations + model) into a directory. In this context, the `infer_signature` function captures schema details, and input_example provides a small sample for illustration.
+
+```python
+with tempfile.TemporaryDirectory() as temp_dir:
+    export_path = os.path.join(temp_dir, "random_forest_dir")
+
+	# Fix Dtypes for infer_signature
+	for col in X_val.select_dtypes(include=['object']).columns:
+	    X_val[col] = X_val[col].astype(str)
+	sig = infer_signature(X_val[processed_features], y_pred)
+	
+    mlflow.sklearn.save_model(
+        sk_pipe,
+        export_path,
+        serialization_format=mlflow.sklearn.SERIALIZATION_FORMAT_CLOUDPICKLE,
+        signature=sig,
+        input_example=X_val[processed_features].iloc[:2]
+    )
+```
+
+
+### 5. Hyperparameter Optimization
+
+- Optimize hyperparameters using Hydra's multi-run feature:
+
+```bash
+> mlflow run . -P steps=train_random_forest \
+  -P hydra_options="modeling.max_features=0.1,0.33,0.5,0.75,1 -m"
+```
+
+![training_runs.png](images/training_runs.png)
+
+- According with the results, we selected the model with 50 `max_depth` and 500 estimators since it is tied for the best model while having lower `max_depth`.
+- Before running the next step, add a tag `prod` to the selected model in W&B, meaning this will be our model used in production.
+
+
+### 6. Testing model
+
+- Validate the best model against the test set.
+
+```bash
+> mlflow run . -P steps=test_regression_model
+```
+
+![test_model_step.png](images/test_model_step.png)
 
 ## License
 
