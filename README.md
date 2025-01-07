@@ -31,8 +31,8 @@ This project was ran on Fedora Linux 38 (Sway), Kernel: 6.8.9-100.fc38.x86_64
 This project has a starter kit that was forked from the official repository.
 
 ```bash
-git clone https://github.com/yurimarca/build-ml-pipeline-for-short-term-rental-prices.git
-cd build-ml-pipeline-for-short-term-rental-prices
+> git clone https://github.com/yurimarca/build-ml-pipeline-for-short-term-rental-prices.git
+> cd build-ml-pipeline-for-short-term-rental-prices
 ```
 
 ### 3. Create the Environment
@@ -40,8 +40,8 @@ cd build-ml-pipeline-for-short-term-rental-prices
 The provided `environment.yml` was used to set up the Conda environment:
 
 ```bash
-conda env create -f environment.yml
-conda activate nyc_airbnb_dev
+> conda env create -f environment.yml
+> conda activate nyc_airbnb_dev
 ```
 
 ### 4. Login to Weights & Biases (W&B)
@@ -49,7 +49,7 @@ conda activate nyc_airbnb_dev
 Log in to W&B to track experiments:
 
 ```bash
-wandb login [your_API_key]
+> wandb login [your_API_key]
 ```
 
 ---
@@ -108,7 +108,7 @@ _ = mlflow.run(
 - **Run the `download` step** to fetch raw data so we can it available for EDA. 
 
    ```bash
-   mlflow run . -P steps=download
+	> mlflow run . -P steps=download
    ```
 
 	- By calling the above command, mlflow runs the pre-existing component `get_data` according to `main.py` file. 
@@ -119,7 +119,7 @@ _ = mlflow.run(
 - **Perform EDA** using a Jupyter Notebook:
 
    ```bash
-   mlflow run src/eda
+	> mlflow run src/eda
    ```
 
 	In the notebook:
@@ -129,11 +129,11 @@ _ = mlflow.run(
 	- After evaluating the report and removing outliers according to price range from stakeholders ($ 10 ~ $ 350), we obtained a skewed price.
 	- Even after removing data outside price range, we still got 19.78% of data rows containing at least one `NaN` column values.
 
-![price_skewed](src/eda/price-hist-range.png)
+![price_skewed](src/eda/price_hist_range.png)
 
 ![correlation](src/eda/corr.png)
 
-![correlation](src/eda/nan.png)
+![nan](src/eda/nan.png)
 
 
 ### 2. Basic Data Cleaning
@@ -169,10 +169,24 @@ if "basic_cleaning" in active_steps:
 
 ```
 
-- In the `run.py` file, sample data is filtered according to the defined price range (hydra config). Also, duplicated data is removed.
+- In the `run.py` file, sample data is filtered according to the defined price range (hydra config) and valid NYC locations. Also, duplicated data is removed.
 - Results show there are many NaN cells still present in the dataset, as we noticed during EDA.
 
+```bash
+> mlflow run . -P steps=basic_cleaning
+```
+
 ![basic_cleaning_step](images/basic_cleaning_step.png)
+
+### 3. Data Testing
+
+- In this step, I **validate the cleaned dataset** by ensuring valid prices ranges and dataset size limits.
+
+```bash
+> mlflow run . -P steps=data_check
+```
+
+![data_check_step.png](images/data_check_step.png)
 
 
 ## License

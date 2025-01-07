@@ -16,7 +16,7 @@ logger = logging.getLogger()
 
 def go(args):
 
-    with tempfile.NamedTemporaryFile(mode='wb+') as fp:
+    with tempfile.NamedTemporaryFile(mode='wb+', suffix=".csv") as fp:
 
         logger.info("Basic cleaning step")
 
@@ -34,11 +34,14 @@ def go(args):
         df = pd.read_csv(artifact_path)
 
         logger.info("Cleaning artifact: %s", args.input_artifact)    
+        # Duplicates
+        df = df.drop_duplicates().reset_index(drop=True)
         # Price range
         idx = df['price'].between(args.min_price, args.max_price)
         df = df[idx].copy()
-        # Duplicates
-        df = df.drop_duplicates().reset_index(drop=True)
+        # Valid NYC Location range
+        idx = df['longitude'].between(-74.25, -73.50) & df['latitude'].between(40.5, 41.2)
+        df = df[idx].copy()
 
         # Save dataframe to temp file
         df.to_csv(fp.name, header=True, index=False)
