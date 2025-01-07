@@ -150,7 +150,30 @@ long_description [An example of a step using MLflow and Weights & Biases]: Downl
 parameters [parameter1,parameter2]: input_artifact,output_artifact,output_type,output_description,min_price,max_price
 ```
 
-- 
+- Next, the `basic_cleaning` step was added in the `main.py` file, where it calls the source code using mlflow and hydra.
+
+```python
+if "basic_cleaning" in active_steps:
+    _ = mlflow.run(
+        os.path.join(hydra.utils.get_original_cwd(), "src", "basic_cleaning"),
+        "main",
+        parameters={
+            "input_artifact": "sample.csv:latest",
+            "output_artifact": "clean_sample.csv",
+            "output_type": "clean_sample",
+            "output_description": "Data with outliers and null values removed",
+            "min_price": config['etl']['min_price'],
+            "max_price": config['etl']['max_price']
+        },
+    )
+
+```
+
+- In the `run.py` file, sample data is filtered according to the defined price range (hydra config). Also, duplicated data is removed.
+- Results show there are many NaN cells still present in the dataset, as we noticed during EDA.
+
+![basic_cleaning_step](images/basic_cleaning_step.png)
+
 
 ## License
 
