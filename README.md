@@ -188,6 +188,16 @@ if "basic_cleaning" in active_steps:
 
 ![data_check_step.png](images/data_check_step.png)
 
+### 4. Data Splitting
+
+- **Split the cleaned data into training, validation, and test sets** using the pre-existing component.
+- After running the step, we obtained two new artifacts in W&B.
+
+```bash
+mlflow run . -P steps=train_val_test_split
+```
+
+![data_split_step.png](images/data_split_step.png)
 
 ## License
 
