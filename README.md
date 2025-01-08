@@ -6,20 +6,6 @@ This project builds an **end-to-end Machine Learning pipeline** to estimate rent
 
 ---
 
-## Table of Contents
-
-1. [Project Setup](#project-setup)
-2. [Pipeline Steps](#pipeline-steps)
-3. [Environment and Tools](#environment-and-tools)
-4. [Step-by-Step Implementation](#step-by-step-implementation)
-5. [Model Training and Optimization](#model-training-and-optimization)
-6. [Testing and Deployment](#testing-and-deployment)
-7. [Results](#results)
-8. [Releasing and Running the Pipeline](#releasing-and-running-the-pipeline)
-9. [Lessons Learned](#lessons-learned)
-
----
-
 ## Project Setup
 
 ### 1. Operating Systems
@@ -65,8 +51,7 @@ The pipeline includes the following steps:
 5. **Model Training (Random Forest)**
 6. **Hyperparameter Optimization**
 7. **Model Selection and Testing**
-8. **Pipeline Visualization**
-9. **Pipeline Release**
+8. **Pipeline Visualization and Release**
 
 ---
 
@@ -113,8 +98,6 @@ _ = mlflow.run(
 
 	- By calling the above command, mlflow runs the pre-existing component `get_data` according to `main.py` file. 
 	- This command highlights the benefit of having hydra configuration.
-
-![download_step](images/download_step.png)
 	
 - **Perform EDA** using a Jupyter Notebook:
 
@@ -130,10 +113,6 @@ _ = mlflow.run(
 	- Even after removing data outside price range, we still got 19.78% of data rows containing at least one `NaN` column values.
 
 ![price_skewed](src/eda/price_hist_range.png)
-
-![correlation](src/eda/corr.png)
-
-![nan](src/eda/nan.png)
 
 
 ### 2. Basic Data Cleaning
@@ -169,7 +148,7 @@ if "basic_cleaning" in active_steps:
 
 ```
 
-- In the `run.py` file, sample data is filtered according to the defined price range (hydra config) and valid NYC locations. Also, duplicated rows are removed.
+- In the `run.py` file, sample data is filtered according to the defined price range (hydra config). Also, duplicated rows are removed.
 - Results show there are many NaN cells still present in the dataset, as we noticed during EDA. This highlights the need to handle NaNs in the inference pipeline that should be used for training and inference.
 
 ```bash
@@ -188,7 +167,7 @@ if "basic_cleaning" in active_steps:
 
 ![data_check_step.png](images/data_check_step.png)
 
-### 4. Data Splitting
+### 4. Train-Validation-Test Split
 
 - **Split the cleaned data into training, validation, and test sets** using the pre-existing component.
 - After running the step, we obtained two new artifacts in W&B: `trainval_data.csv` and `test_data.csv`.
@@ -199,7 +178,7 @@ if "basic_cleaning" in active_steps:
 
 ![data_split_step.png](images/data_split_step.png)
 
-### 5. Train Random Forest
+### 5. Model Training (Random Forest)
 
 - **Train a baseline Random Forest model**.
 
@@ -302,7 +281,7 @@ with tempfile.TemporaryDirectory() as temp_dir:
 ```
 
 
-### 5. Hyperparameter Optimization
+### 6. Hyperparameter Optimization
 
 - Optimize hyperparameters using Hydra's multi-run feature:
 
@@ -314,18 +293,25 @@ with tempfile.TemporaryDirectory() as temp_dir:
 ![training_runs.png](images/training_runs.png)
 
 - According with the results, we selected the model with 50 `max_depth` and 500 estimators since it is tied for the best model while having lower `max_depth`.
-- Before running the next step, add a tag `prod` to the selected model in W&B, meaning this will be our model used in production.
 
 
-### 6. Testing model
+### 7. Model Selection and Testing
 
-- Validate the best model against the test set.
+- First, hyperparameters `max_depth` and `n_estimators` in hydra's `config.yaml` file are updated according to the ones from the selected model.
+- Also, the selected model exported to W&B receives a tag for production `prod`.
+- Then, to validate the best model against the test set, the pre-existing step tests the `prod` model from W&B.
 
 ```bash
 > mlflow run . -P steps=test_regression_model
 ```
 
 ![test_model_step.png](images/test_model_step.png)
+
+### 8. Pipeline Visualization and Release
+
+- W&B allow us to check the lineage from the `prod` model artifact, which is an illustration of the pipeline.
+
+![<p>lineage.png](images/lineage.png)
 
 ## License
 
