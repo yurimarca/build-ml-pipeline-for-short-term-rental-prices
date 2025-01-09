@@ -311,7 +311,17 @@ with tempfile.TemporaryDirectory() as temp_dir:
 
 - W&B allow us to check the lineage from the `prod` model artifact, which is an illustration of the pipeline.
 
-![<p>lineage.png](images/lineage.png)
+![lineage.png](images/lineage.png)
+
+- After running the released pipeline on github, it is possible to test the pipeline tagged version 1.0.0 on another sample data:
+
+```bash
+> mlflow run https://github.com/yurimarca/build-ml-pipeline-for-short-term-rental-prices.git -v 1.0.0 -P hydra_options="etl.sample='sample2.csv'"
+```
+
+- The new training data includes invalid samples that fall outside the valid area of NYC. This issue was identified during the data check.
+- To address this, we removed values outside NYC in a manner similar to how price values were handled during the `basic_cleaning` step.
+- After pushing the change, we deploy a new version v 1.0.1 which runs successfully for `sample2.csv`
 
 ## License
 
