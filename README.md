@@ -4,6 +4,8 @@
 
 This project builds an **end-to-end Machine Learning pipeline** to estimate rental prices for short-term stays in New York City. The pipeline focuses on data preparation, modeling, testing, and deployment to ensure it can be easily reused for weekly retraining.
 
+For this project, Weights and Biases is used to track the experiments and artifacts. Here is the link to my public W&B project: [https://wandb.ai/yurimarca-ai/nyc_airbnb/](https://wandb.ai/yurimarca-ai/nyc_airbnb/)
+
 ---
 
 ## Project Setup
